@@ -3,64 +3,73 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-console.log('=== SERVER STARTING ===');
-console.log('Current directory:', __dirname);
-console.log('Looking for public folder:', path.join(__dirname, 'public'));
+const PUBLIC_DIR = path.join(__dirname, 'public');
 
-
-// Create the server
-const server = http.createServer((request, response) => {
-    console.log('\n==== NEW REQUEST ====');
-    console.log('URL:', request.url);
-    console.log('Method:', request.method);
-
-    // Always show what path we are trying to access
-    const publicDir = path.join(__dirname, 'public');
-    console.log('Public directory:', publicDir);
-
-    let filePath;
-
-    // Map URLs to files
-    if (request.url === '/' || request.url === '/index.html') {
-        filePath = path.join(publicDir, 'index.html');
-        console.log('Trying to serve index.html from:', filePath);
-    } else if (request.url.endsWith('.html')) {
-        filePath = path.join(publicDir, '404.html');
-        console.log('Trying to serve 404.html from:', filePath);
+const server = http.createServer((req, res) => {
+    console.log(`\n=== NEW REQUEST: ${req.method} ${req.url} ===`);
+    
+    // Normalize URL - remove query strings
+    const url = req.url.split('?')[0];
+    
+    // Determine which file to serve and what status code
+    let filename, statusCode;
+    
+    if (url === '/' || url === '/index.html') {
+        filename = 'index.html';
+        statusCode = 200;
+        console.log('✅ Serving: index.html (student page)');
+    } else if (url.endsWith('.html')) {
+        filename = '404.html';
+        statusCode = 404;
+        console.log('❌ Serving: 404.html (404 Not Found)');
     } else {
-        console.log('Not an HTML request, sending palin 404');
-        response.writeHead(404, { 'Content-Type': 'text/plain'});
-        response.end('404 - Not Found');
+        // For non-HTML requests
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('404 Not Found');
+        console.log('❌ Invalid request (not .html)');
+        return;
     }
-
-    // Check if file exists BEFORE trying to read it
+    
+    // Build file path
+    const filePath = path.join(PUBLIC_DIR, filename);
+    console.log(`File path: ${filePath}`);
+    
+    // Check if file exists first
     fs.access(filePath, fs.constants.F_OK, (err) => {
         if (err) {
-            console.log('❌ File does not exist:', filePath);
-            response.writeHead(404, { 'Content-Type': 'text/plain' });
-            response.end(`File not found: ${filePath}`);
-        } else {
-            console.log('✅ File exists:', filePath);
-            fs.readFile(filePath, (error, content) => {
-                if (error) {
-                    console.log('❌ Error reading file:', error);
-                    response.writeHead(500);
-                    response.end('Server Error');
-                } else {
-                    console.log('✅ Successfully read file, sending response');
-                }
-            });
+            console.log(`❌ File not found: ${filePath}`);
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('Internal Server Error');
+            return;
         }
-    }); 
+        
+        // Read and serve the file
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                console.log(`❌ Error reading file: ${err.message}`);
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.end('Internal Server Error');
+                return;
+            }
+            
+            console.log(`✅ Sending file with status: ${statusCode}`);
+            res.writeHead(statusCode, { 'Content-Type': 'text/html' });
+            res.end(data);
+        });
+    });
 });
 
 const PORT = 3000;
 server.listen(PORT, () => {
-    console.log(`\n=== Server staarted ===`);
-    console.log(`Listening on port ${PORT}`);
-    console.log(`Test these URLs`);
-    console.log(`1. http://localhost:${PORT}/index.html`);
-    console.log(`2. http://localhost:${PORT}/`);
-    console.log(`3. http://localhost:${PORT}/random.html`);
-    console.log(`4. http://localhost:${PORT}/test.html\n`);
+    console.log(`\n🚀 Server started on http://localhost:${PORT}`);
+    console.log(`📁 Serving from: ${PUBLIC_DIR}`);
+    console.log('\n=== Available Endpoints ===');
+    console.log('GET /              → index.html (200)');
+    console.log('GET /index.html    → index.html (200)');
+    console.log('GET /anything.html → 404.html   (404)');
+    console.log('GET /data.html     → 404.html   (404)');
+    console.log('GET /test.html     → 404.html   (404)');
+    console.log('\n=== Test Commands ===');
+    console.log(`curl -I http://localhost:${PORT}/index.html`);
+    console.log(`curl -I http://localhost:${PORT}/data.html`);
 });

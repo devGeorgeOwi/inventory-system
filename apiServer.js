@@ -2,230 +2,261 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-// File path for our "database"
-const DATA_FILE = path.join(__dirname, 'date', 'items.json');
+const DATA_FILE = path.join(__dirname, 'data', 'items.json');
 
-// Helper function to read items from file
-function readItemFromFile() {
+// Ensure data directory exists
+if (!fs.existsSync(path.join(__dirname, 'data'))) {
+    fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
+}
+
+// Initialize empty items.json if it doesn't exist
+if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, '[]');
+}
+
+// Helper functions
+function readItems() {
     try {
-        // Check if file exists
-        if (!fs.existsSync(DATA_FILE)) {
-            // Create empty array if file doesn't exist
-            return [];
-        }
-
-        const data = fs.readFileSync(DATA_FILE, 'utf-8');
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        console.error('Error reading file:', error);
+        console.error('Error reading file:', error.message);
         return [];
     }
 }
 
-// Helper function to save items to file
-function saveItemsToFile(items) {
+function saveItems(items) {
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2));
+        return true;
     } catch (error) {
-        console.error('Error saving file:', error);
+        console.error('Error saving file:', error.message);
+        return false;
     }
 }
 
-// Helper function to parse request body (data sent to server)
-function parseRequestBody(request) {
-    return new Promise((resolve) => {
+function getNextId(items) {
+    if (items.length === 0) return 1;
+    const maxId = Math.max(...items.map(item => parseInt(item.id) || 0));
+    return maxId + 1;
+}
+
+// Parse request body
+function parseBody(req) {
+    return new Promise((resolve, reject) => {
         let body = '';
-
-        // Collect data chunks
-        request.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        // When all data is received
-        request.on('end', () => {
-            try  {
-                resolve(JSON.parse(body));;
-            } catch {
-                resolve({}); // Return empty object if invalid JSON
+        req.on('data', chunk => body += chunk.toString());
+        req.on('end', () => {
+            try {
+                resolve(body ? JSON.parse(body) : {});
+            } catch (error) {
+                reject(error);
             }
         });
     });
 }
 
-// Create API server
-const server = http.createServer(async (request, response) => {
-    const { method, url } = request;
-
-    console.log(`${method} ${url}`);
-
-    // Set CORS headers (allows frontend to access API)
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    // Handle preflight requests (browser checks)
+// Create server
+const server = http.createServer(async (req, res) => {
+    const { method, url } = req;
+    
+    console.log(`\n${method} ${url}`);
+    
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Handle preflight
     if (method === 'OPTIONS') {
-        response.writeHead(204);
-        response.end();
+        res.writeHead(204);
+        res.end();
         return;
     }
-
-    // Set response headers for JSON
-    response.setHeader('Content-Type', 'application/json');
-
-    // Define our API routes
-    const route = `${method} ${url}`;
-
+    
+    // Remove trailing slash and handle root
+    const cleanUrl = url.replace(/\/$/, '');
+    
     try {
-        // ROUTE 1: GET all items
-        if (route === 'GET /items' || route === 'GET /items/') {
-            const items = readItemFromFile();
-            response.writeHead(200);
-            response.end(JSON.stringify({
+        // GET /items - Get all items
+        if (method === 'GET' && cleanUrl === '/items') {
+            const items = readItems();
+            res.writeHead(200);
+            res.end(JSON.stringify({
                 success: true,
                 data: items,
-                message: 'Items retrieved successfully'
+                count: items.length
             }));
         }
-
-        // ROUTE 2: GET single item by ID
-        else if (url.startsWith('/items/') && method === 'GET') {
-            const id = url.split('/')[2]; // Extract ID from URL
-            const items = readItemFromFile();
-            const item = items.find(item => item.id === id);
-
-            if (item) {
-                response.writeHead(200);
-                response.end(JSON.stringify({
-                    success: true,
-                    data: item,
-                    message: 'Item found'
-                }));
-            } else {
-                response.writeHead(404);
-                response.end(JSON.stringify({
-                    success: false,
-                    message: 'Item not found'
-                }));
-            }
-        }
-
-        // ROUTE 3: CREATE new item
-        else if (route === 'POST /items' || route === 'POST /items/') {
-            const newItem = await parseRequestBody(request);
-
-            // Validate required fields
-            if (!newItem.name || !newItem.price || !newItem.size) {
-                response.writeHead(400);
-                respoonse.end(JSON.stringify({
+        
+        // POST /items - Create item
+        else if (method === 'POST' && cleanUrl === '/items') {
+            const body = await parseBody(req);
+            
+            // Validate
+            if (!body.name || body.price === undefined || !body.size) {
+                res.writeHead(400);
+                res.end(JSON.stringify({
                     success: false,
                     message: 'Missing required fields: name, price, size'
                 }));
                 return;
             }
-
-            // Generate unique ID
-            newItem.id = Date.now().toString();
-
-            // Read existing items, add new one, save
-            const items = readItemFromFile();
+            
+            const items = readItems();
+            const newItem = {
+                id: getNextId(items).toString(),
+                name: body.name,
+                price: parseFloat(body.price),
+                size: body.size.toUpperCase()
+            };
+            
+            // Validate size
+            if (!['S', 'M', 'L'].includes(newItem.size)) {
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                    success: false,
+                    message: 'Size must be S, M, or L'
+                }));
+                return;
+            }
+            
             items.push(newItem);
-            saveItemsToFile(items);
-
-            response.writeHead(201); // 201 = Created
-            response.end(JSON.stringify({
+            saveItems(items);
+            
+            res.writeHead(201);
+            res.end(JSON.stringify({
                 success: true,
                 data: newItem,
-                message: 'Item created successfully'
+                message: 'Item created'
             }));
         }
-
-        // ROUTE 4: UPDATE item
-        else if (url.startsWith('/items/') && method === 'PUT') {
-            const id = url.split('/')[2];
-            const items = readItemFromFile();
-            const itemIndex = items.findIndex(item => item.id === id);
-
-            if (itemIndex === -1) {
-                response.writeHead(404);
-                response.end(JSON.stringify({
+        
+        // GET /items/:id - Get single item
+        else if (method === 'GET' && cleanUrl.startsWith('/items/')) {
+            const id = cleanUrl.split('/')[2];
+            const items = readItems();
+            const item = items.find(i => i.id === id);
+            
+            if (item) {
+                res.writeHead(200);
+                res.end(JSON.stringify({
+                    success: true,
+                    data: item
+                }));
+            } else {
+                res.writeHead(404);
+                res.end(JSON.stringify({
+                    success: false,
+                    message: `Item with ID "${id}" not found`
+                }));
+            }
+        }
+        
+        // PUT /items/:id - Update item
+        else if (method === 'PUT' && cleanUrl.startsWith('/items/')) {
+            const id = cleanUrl.split('/')[2];
+            const body = await parseBody(req);
+            const items = readItems();
+            const index = items.findIndex(i => i.id === id);
+            
+            if (index === -1) {
+                res.writeHead(404);
+                res.end(JSON.stringify({
                     success: false,
                     message: 'Item not found'
                 }));
                 return;
             }
-
-            const updatedData = await parseRequestBody(request);
-
-            // Keep the ID, update other fields
-            items[itemIndex] = {
-                ...items[itemIndex],
-                ...updatedData,
-                id: id // Ensure ID doesn't change
-            };
-
-            saveItemsToFile(items);
-
-            response.writeHead(200);
-            response.end(JSON.stringify({
+            
+            // Update item
+            const updatedItem = { ...items[index] };
+            
+            if (body.name !== undefined) updatedItem.name = body.name;
+            if (body.price !== undefined) updatedItem.price = parseFloat(body.price);
+            if (body.size !== undefined) {
+                const size = body.size.toUpperCase();
+                if (!['S', 'M', 'L'].includes(size)) {
+                    res.writeHead(400);
+                    res.end(JSON.stringify({
+                        success: false,
+                        message: 'Size must be S, M, or L'
+                    }));
+                    return;
+                }
+                updatedItem.size = size;
+            }
+            
+            items[index] = updatedItem;
+            saveItems(items);
+            
+            res.writeHead(200);
+            res.end(JSON.stringify({
                 success: true,
-                data: items[itemIndex],
-                message: 'Item updated successfully'
+                data: updatedItem,
+                message: 'Item updated'
             }));
         }
-
-        // ROUTE 5: DELETE item
-        else if (url.substring('/items/') && method === 'DELETE') {
-            const id = url.split('/')[2];
-            let items = readItemFromFile();
+        
+        // DELETE /items/:id - Delete item
+        else if (method === 'DELETE' && cleanUrl.startsWith('/items/')) {
+            const id = cleanUrl.split('/')[2];
+            const items = readItems();
             const initialLength = items.length;
-
-            // Filter out the item to delete
-            items = items.filter(item => item.id !== id);
-
-            if (items.length === initialLength) {
-                response.writeHead(404);
-                response.end(JSON.stringify({
+            const filteredItems = items.filter(i => i.id !== id);
+            
+            if (filteredItems.length === initialLength) {
+                res.writeHead(404);
+                res.end(JSON.stringify({
                     success: false,
                     message: 'Item not found'
                 }));
-            } else {
-                saveItemsToFile(items);
-                response.writeHead(200);
-                response.end(JSON.stringify({
-                    success: true,
-                    message: 'Item deleted successfully'
-                }));
+                return;
             }
-        }
-
-        // ROUTE 6: Invalid route
-        else {
-            response.writeHead(404);
-            response.end(JSON.stringify({
-                success: false,
-                message: 'API endpoint not found'
+            
+            saveItems(filteredItems);
+            
+            res.writeHead(200);
+            res.end(JSON.stringify({
+                success: true,
+                message: 'Item deleted'
             }));
         }
-
+        
+        // Invalid route
+        else {
+            res.writeHead(404);
+            res.end(JSON.stringify({
+                success: false,
+                message: 'Route not found'
+            }));
+        }
+        
     } catch (error) {
         console.error('Server error:', error);
-        response.writeHead(500);
-        response.end(JSON.stringify({
+        res.writeHead(500);
+        res.end(JSON.stringify({
             success: false,
             message: 'Internal server error'
         }));
     }
 });
 
-// Start API server on port 3001
 const PORT = 3001;
 server.listen(PORT, () => {
-    console.log(`API server running at http://localhost:${PORT}/`);
-
-    // Initialize data file if it doesn't exist
-    if (!fs.existsSync(DATA_FILE)) {
-        saveItemsToFile([]);
-        console.log('Created items.json file');
-    }
+    console.log(`\n✅ API Server running on http://localhost:${PORT}`);
+    console.log('\n📋 Available endpoints:');
+    console.log('  GET    /items           - Get all items');
+    console.log('  POST   /items           - Create item');
+    console.log('  GET    /items/{id}      - Get single item');
+    console.log('  PUT    /items/{id}      - Update item');
+    console.log('  DELETE /items/{id}      - Delete item');
+    
+    console.log('\n💡 Test with these commands:');
+    console.log('  curl http://localhost:3001/items');
+    console.log('  curl -X POST http://localhost:3001/items \\');
+    console.log('    -H "Content-Type: application/json" \\');
+    console.log('    -d \'{"name":"Test","price":10,"size":"M"}\'');
+    console.log('  curl http://localhost:3001/items/1');
 });

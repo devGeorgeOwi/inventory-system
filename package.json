@@ -1,12 +1,14 @@
 {
   "name": "inventory-system",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Node.js assignment - web and API servers",
+  "main": "webServer.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "web": "node webServer.js",
+    "api": "node apiServer.js",
+    "start": "concurrently \"npm run web\" \"npm run api\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test Client</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        input, select { margin: 5px; padding: 8px; }
+        button { margin: 5px; padding: 8px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; overflow-x: auto; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Inventory API Test</h1>
+    <p>API URL: <code id="apiUrl">http://localhost:3001</code></p>
+    
+    <div class="section">
+        <h3>1. Get All Items</h3>
+        <button onclick="getAllItems()">GET /items</button>
+        <pre id="result1">Click button to test</pre>
+    </div>
+    
+    <div class="section">
+        <h3>2. Create New Item</h3>
+        <div>
+            <input type="text" id="name" placeholder="Item name" value="T-Shirt">
+            <input type="number" id="price" placeholder="Price" value="19.99" step="0.01">
+            <select id="size">
+                <option value="S">Small (S)</option>
+                <option value="M" selected>Medium (M)</option>
+                <option value="L">Large (L)</option>
+            </select>
+            <button onclick="createItem()">POST /items</button>
+        </div>
+        <pre id="result2">Click button to test</pre>
+    </div>
+    
+    <div class="section">
+        <h3>3. Get Single Item</h3>
+        <div>
+            <input type="text" id="itemId" placeholder="Item ID (e.g., 1)" value="1">
+            <button onclick="getItem()">GET /items/{id}</button>
+        </div>
+        <pre id="result3">Click button to test</pre>
+    </div>
+    
+    <div class="section">
+        <h3>4. Update Item</h3>
+        <div>
+            <input type="text" id="updateId" placeholder="Item ID" value="1">
+            <input type="text" id="updateName" placeholder="New name" value="Updated T-Shirt">
+            <button onclick="updateItem()">PUT /items/{id}</button>
+        </div>
+        <pre id="result4">Click button to test</pre>
+    </div>
+    
+    <div class="section">
+        <h3>5. Delete Item</h3>
+        <div>
+            <input type="text" id="deleteId" placeholder="Item ID">
+            <button onclick="deleteItem()">DELETE /items/{id}</button>
+        </div>
+        <pre id="result5">Click button to test</pre>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:3001';
+        
+        async function getAllItems() {
+            try {
+                const response = await fetch(`${API_URL}/items`);
+                const data = await response.json();
+                document.getElementById('result1').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('result1').className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                document.getElementById('result1').textContent = 'Error: ' + error.message;
+                document.getElementById('result1').className = 'error';
+            }
+        }
+        
+        async function createItem() {
+            const item = {
+                name: document.getElementById('name').value,
+                price: parseFloat(document.getElementById('price').value),
+                size: document.getElementById('size').value
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/items`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+                const data = await response.json();
+                document.getElementById('result2').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('result2').className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                document.getElementById('result2').textContent = 'Error: ' + error.message;
+                document.getElementById('result2').className = 'error';
+            }
+        }
+        
+        async function getItem() {
+            const id = document.getElementById('itemId').value;
+            try {
+                const response = await fetch(`${API_URL}/items/${id}`);
+                const data = await response.json();
+                document.getElementById('result3').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('result3').className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                document.getElementById('result3').textContent = 'Error: ' + error.message;
+                document.getElementById('result3').className = 'error';
+            }
+        }
+        
+        async function updateItem() {
+            const id = document.getElementById('updateId').value;
+            const updates = {
+                name: document.getElementById('updateName').value,
+                price: 24.99
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/items/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                const data = await response.json();
+                document.getElementById('result4').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('result4').className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                document.getElementById('result4').textContent = 'Error: ' + error.message;
+                document.getElementById('result4').className = 'error';
+            }
+        }
+        
+        async function deleteItem() {
+            const id = document.getElementById('deleteId').value;
+            if (!id) {
+                document.getElementById('result5').textContent = 'Please enter an ID';
+                document.getElementById('result5').className = 'error';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/items/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                document.getElementById('result5').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('result5').className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                document.getElementById('result5').textContent = 'Error: ' + error.message;
+                document.getElementById('result5').className = 'error';
+            }
+        }
+        
+        // Auto-load items on page load
+        getAllItems();
+    </script>
+</body>
+</html>

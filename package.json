@@ -1,14 +1,42 @@
 {
-  "name": "inventory-system",
+  "name": "inventory-management-system",
   "version": "1.0.0",
-  "description": "Node.js assignment - web and API servers",
+  "description": "A Node.js web and API server for inventory management without frameworks",
   "main": "webServer.js",
   "scripts": {
+    "start": "concurrently \"npm run web\" \"npm run api\"",
     "web": "node webServer.js",
     "api": "node apiServer.js",
-    "start": "concurrently \"npm run web\" \"npm run api\""
+    "dev": "nodemon --exec \"npm start\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "nodejs",
+    "inventory",
+    "api",
+    "web-server",
+    "file-system",
+    "http-server",
+    "no-framework",
+    "rest-api",
+    "backend"
+  ],
+  "author": "George Owoicho owoichogeorge4400@gmail.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devGeorgeOwi/inventory-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devGeorgeOwi/inventory-system/issues"
+  },
+  "homepage": "https://github.com/devGeorgeOwi/inventory-system#readme",
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
   }
 }

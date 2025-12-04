@@ -12,7 +12,7 @@ A lightweight Node.js application featuring dual servers: a static web server wi
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/inventory-system.git
+git clone https://github.com/devGeorgeOwi/inventory-system.git
 cd inventory-system
 
 # 2. Install dependencies

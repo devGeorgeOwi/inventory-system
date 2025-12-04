@@ -26,3 +26,17 @@ A lightweight Node.js web and API server built without any frameworks for managi
 - **Concurrently** - Run multiple servers
 
 ## 📁 Project Structure
+
+inventory-system/
+├── public/ # Static HTML files
+│ ├── index.html # Student profile
+│ ├── 404.html # 404 error page
+│ └── test-api.html # API testing interface
+├── data/ # Data storage
+│ └── items.json # Inventory database
+├── webServer.js # Web server (port 3000)
+├── apiServer.js # API server (port 3001)
+├── package.json # Dependencies & scripts
+├── README.md # This file
+└── .gitignore # Git ignore rules
+

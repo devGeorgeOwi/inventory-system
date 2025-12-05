@@ -45,10 +45,8 @@ echo [] > api-server/data/items.json
 # 3. Start both servers
 npm start
 ```
-### 🌐 Access
-    API Server -> Port 3001 -> URL: http://localhost:3001/
-
-    # Terminal 2: API server (port 3001)  
+### Usage
+    ```bash  
     npm run api
     ```
 ### 🌐 Access Points

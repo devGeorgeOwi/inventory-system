@@ -33,13 +33,8 @@ Server runs port 3001
 ## 🚀 Quick Start
 
 ```bash
-<<<<<<< HEAD
-# 1. Clone and install
-git clone git clone https://github.com/devGeorgeOwi/inventory-system.git
-=======
 # 1. Clone the repository
 git clone https://github.com/devGeorgeOwi/inventory-system.git
->>>>>>> 0ad89ec5fcfebb6a33a78a6d8bc585100f566643
 cd inventory-system
 npm install
 
@@ -50,8 +45,6 @@ echo [] > api-server/data/items.json
 # 3. Start both servers
 npm start
 ```
-
-<<<<<<< HEAD
 ### 🌐 Access
     API Server -> Port 3001 -> URL: http://localhost:3001/
 =======

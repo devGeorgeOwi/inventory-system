@@ -44,13 +44,13 @@ echo [] > api-server/data/items.json
 
 # 3. Start both servers
 npm start
+```bash
+npm run web
+npm run api
 ```
-### Usage
-    ```bash  
-    npm run api
-    ```
-### 🌐 Access Points
-    Once running, access these URLs:
+
+## 🌐 Access Points
+    Once running, access these URLs
 
     
 # server port url
@@ -82,7 +82,7 @@ API Server	3001	http://localhost:3001/items (API Endpoint)
 ### Missing files error?
     ```bash
         # Ensure all files exist:
-        ls -la public/index.html public/404.html webServer.js apiServer.js
+        ls -la web-server/public/index.html web-server/public/404.html web-server/webServer.js api-server/apiServer.js
     ```
 ### API not responding?
     1. Check if servers are running: npm start

@@ -47,7 +47,7 @@ npm start
 ```
 ### 🌐 Access
     API Server -> Port 3001 -> URL: http://localhost:3001/
-=======
+
     # Terminal 2: API server (port 3001)  
     npm run api
     ```
@@ -107,5 +107,4 @@ API Server	3001	http://localhost:3001/items (API Endpoint)
    - ✅ Modular, framework-free code
 
 ### 📄 License
-MIT License 
->>>>>>> 0ad89ec5fcfebb6a33a78a6d8bc585100f566643
+MIT License

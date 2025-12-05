@@ -3,8 +3,9 @@ const fs = require('fs');
 const path = require('path');
 
 const DATA_FILE = path.join(__dirname, 'data', 'items.json');
+const PORT = 3001;
 
-// Ensure data directory exists
+// Initialize data directory
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
     fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
 }
@@ -20,7 +21,7 @@ function readItems() {
         const data = fs.readFileSync(DATA_FILE, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        console.error('Error reading file:', error.message);
+        console.error('❌ Error reading items:', error.message);
         return [];
     }
 }
@@ -30,7 +31,7 @@ function saveItems(items) {
         fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2));
         return true;
     } catch (error) {
-        console.error('Error saving file:', error.message);
+        console.error('❌ Error saving items:', error.message);
         return false;
     }
 }
@@ -41,7 +42,6 @@ function getNextId(items) {
     return maxId + 1;
 }
 
-// Parse request body
 function parseBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
@@ -56,11 +56,12 @@ function parseBody(req) {
     });
 }
 
-// Create server
+// Create API server
 const server = http.createServer(async (req, res) => {
     const { method, url } = req;
+    const cleanUrl = url.replace(/\/$/, '');
     
-    console.log(`\n${method} ${url}`);
+    console.log(`🔗 ${method} ${url}`);
     
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -75,11 +76,8 @@ const server = http.createServer(async (req, res) => {
         return;
     }
     
-    // Remove trailing slash and handle root
-    const cleanUrl = url.replace(/\/$/, '');
-    
     try {
-        // GET /items - Get all items
+        // GET /items
         if (method === 'GET' && cleanUrl === '/items') {
             const items = readItems();
             res.writeHead(200);
@@ -90,11 +88,11 @@ const server = http.createServer(async (req, res) => {
             }));
         }
         
-        // POST /items - Create item
+        // POST /items
         else if (method === 'POST' && cleanUrl === '/items') {
             const body = await parseBody(req);
             
-            // Validate
+            // Validation
             if (!body.name || body.price === undefined || !body.size) {
                 res.writeHead(400);
                 res.end(JSON.stringify({
@@ -129,11 +127,11 @@ const server = http.createServer(async (req, res) => {
             res.end(JSON.stringify({
                 success: true,
                 data: newItem,
-                message: 'Item created'
+                message: 'Item created successfully'
             }));
         }
         
-        // GET /items/:id - Get single item
+        // GET /items/:id
         else if (method === 'GET' && cleanUrl.startsWith('/items/')) {
             const id = cleanUrl.split('/')[2];
             const items = readItems();
@@ -154,7 +152,7 @@ const server = http.createServer(async (req, res) => {
             }
         }
         
-        // PUT /items/:id - Update item
+        // PUT /items/:id
         else if (method === 'PUT' && cleanUrl.startsWith('/items/')) {
             const id = cleanUrl.split('/')[2];
             const body = await parseBody(req);
@@ -172,7 +170,6 @@ const server = http.createServer(async (req, res) => {
             
             // Update item
             const updatedItem = { ...items[index] };
-            
             if (body.name !== undefined) updatedItem.name = body.name;
             if (body.price !== undefined) updatedItem.price = parseFloat(body.price);
             if (body.size !== undefined) {
@@ -195,18 +192,17 @@ const server = http.createServer(async (req, res) => {
             res.end(JSON.stringify({
                 success: true,
                 data: updatedItem,
-                message: 'Item updated'
+                message: 'Item updated successfully'
             }));
         }
         
-        // DELETE /items/:id - Delete item
+        // DELETE /items/:id
         else if (method === 'DELETE' && cleanUrl.startsWith('/items/')) {
             const id = cleanUrl.split('/')[2];
             const items = readItems();
-            const initialLength = items.length;
-            const filteredItems = items.filter(i => i.id !== id);
+            const filtered = items.filter(i => i.id !== id);
             
-            if (filteredItems.length === initialLength) {
+            if (filtered.length === items.length) {
                 res.writeHead(404);
                 res.end(JSON.stringify({
                     success: false,
@@ -215,12 +211,12 @@ const server = http.createServer(async (req, res) => {
                 return;
             }
             
-            saveItems(filteredItems);
+            saveItems(filtered);
             
             res.writeHead(200);
             res.end(JSON.stringify({
                 success: true,
-                message: 'Item deleted'
+                message: 'Item deleted successfully'
             }));
         }
         
@@ -229,12 +225,12 @@ const server = http.createServer(async (req, res) => {
             res.writeHead(404);
             res.end(JSON.stringify({
                 success: false,
-                message: 'Route not found'
+                message: 'API endpoint not found. Available: GET /items, POST /items, GET /items/:id, PUT /items/:id, DELETE /items/:id'
             }));
         }
         
     } catch (error) {
-        console.error('Server error:', error);
+        console.error('❌ Server error:', error);
         res.writeHead(500);
         res.end(JSON.stringify({
             success: false,
@@ -243,20 +239,13 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
-const PORT = 3001;
 server.listen(PORT, () => {
-    console.log(`\n✅ API Server running on http://localhost:${PORT}`);
-    console.log('\n📋 Available endpoints:');
+    console.log(`🚀 API Server running on http://localhost:${PORT}`);
+    console.log('\n📋 API Endpoints:');
     console.log('  GET    /items           - Get all items');
-    console.log('  POST   /items           - Create item');
+    console.log('  POST   /items           - Create new item');
     console.log('  GET    /items/{id}      - Get single item');
     console.log('  PUT    /items/{id}      - Update item');
     console.log('  DELETE /items/{id}      - Delete item');
-    
-    console.log('\n💡 Test with these commands:');
-    console.log('  curl http://localhost:3001/items');
-    console.log('  curl -X POST http://localhost:3001/items \\');
-    console.log('    -H "Content-Type: application/json" \\');
-    console.log('    -d \'{"name":"Test","price":10,"size":"M"}\'');
-    console.log('  curl http://localhost:3001/items/1');
+    console.log('\n💡 Test with: curl http://localhost:3001/items');
 });

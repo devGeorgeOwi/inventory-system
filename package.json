@@ -5,36 +5,19 @@
   "main": "webServer.js",
   "scripts": {
     "start": "concurrently \"npm run web\" \"npm run api\"",
-    "web": "node webServer.js",
-    "api": "node apiServer.js",
-    "dev": "nodemon --exec \"npm start\"",
+    "web": "node web-server/webServer.js",
+    "api": "node api-server/apiServer.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "nodejs",
+     "nodejs",
     "inventory",
     "api",
     "web-server",
-    "file-system",
-    "http-server",
-    "no-framework",
-    "rest-api",
-    "backend"
+    "no-framework"
   ],
-  "author": "George Owoicho owoichogeorge4400@gmail.com",
+  "author": "George Owoicho",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/devGeorgeOwi/inventory-system.git"
-  },
-  "bugs": {
-    "url": "https://github.com/devGeorgeOwi/inventory-system/issues"
-  },
-  "homepage": "https://github.com/devGeorgeOwi/inventory-system#readme",
-  "engines": {
-    "node": ">=14.0.0",
-    "npm": ">=6.0.0"
-  },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "nodemon": "^3.0.2"

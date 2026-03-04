@@ -44,7 +44,6 @@ echo [] > api-server/data/items.json
 
 # 3. Start both servers
 npm start
-```bash
 npm run web
 npm run api
 ```

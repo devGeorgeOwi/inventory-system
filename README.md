@@ -52,14 +52,12 @@ npm run api
 ## 🌐 Access Points
     Once running, access these URLs
 
----------- | -----|---------------------   
  Server    | Port | Url
 ---------- | -----| ----------------------------
 Web Server | 3000 |	http://localhost:3000/ (Home)
            |      | http://localhost:3000/index.html (Student Profile)  
            |      | http://localhost:3000/test-api.html (API Testing UI)
            
-
 API Server | 3001 |	http://localhost:3001/items (API Endpoint)
            |      | http://localhost:3001/ (API Documentation)
 
